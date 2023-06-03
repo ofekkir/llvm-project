@@ -21,7 +21,11 @@ auto LoopMatcher =
             recordDecl(
               hasDescendant(
                 fieldDecl(
-                  hasName("b")
+                  hasType(
+                    recordDecl(
+                      hasName("mutex")
+                    )
+                  )
                 ).bind("internal_member")
               )
             ).bind("internal_container")
@@ -39,7 +43,7 @@ class LoopPrinter : public MatchFinder::MatchCallback {
 public:
   virtual void run(const MatchFinder::MatchResult &Result) override {
     if (const auto *res =
-            Result.Nodes.getNodeAs<clang::RecordDecl>("pointee"))
+            Result.Nodes.getNodeAs<clang::RecordDecl>("internal_container"))
       res->dump();
   }
 };

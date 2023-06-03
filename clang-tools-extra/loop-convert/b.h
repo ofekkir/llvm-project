@@ -1,6 +1,12 @@
 #pragma once
 
+struct mutex
+{
+    /* data */
+};
+
+
 struct B
 {
-    int b;
+    struct mutex mutex;
 };
