@@ -48,9 +48,12 @@ auto LoopMatcher =
 class LoopPrinter : public MatchFinder::MatchCallback {
 public:
   virtual void run(const MatchFinder::MatchResult &Result) override {
-    if (const auto *res =
-            Result.Nodes.getNodeAs<clang::RecordDecl>("internal_container"))
-      res->dump();
+    const auto *external_container = Result.Nodes.getNodeAs<clang::RecordDecl>("external_container");
+    if (!external_container) return;
+
+    const auto *external_pointer = Result.Nodes.getNodeAs<clang::FieldDecl>("external_pointer");
+    if (!external_pointer) return;
+    external_pointer->dump();
   }
 };
 
