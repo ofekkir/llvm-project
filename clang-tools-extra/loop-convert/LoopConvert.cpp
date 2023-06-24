@@ -21,39 +21,48 @@ using namespace clang;
 using namespace clang::ast_matchers;
 namespace {
 
+
 auto LoopMatcher =
-  recordDecl(
+  functionDecl(
     hasDescendant(
-      fieldDecl(
-        hasType(
-          pointsTo(
-            recordDecl(
+      callExpr(
+        callee(functionDecl(hasName("mutex_lock"))),
+        hasArgument(0, stmt(
+          hasDescendant(
+            memberExpr(
               hasDescendant(
-                fieldDecl(
-                  hasType(
-                    recordDecl(
-                      hasName("mutex")
-                    )
-                  )
-                ).bind("internal_member")
+                // Dumps from inside (mutex) out (container)
+                memberExpr().bind("external_member")
               )
-            ).bind("internal_container")
+            ).bind("internal_member")
           )
-        )
-      ).bind("external_pointer")
+        ).bind("stmt"))
+      )
     )
-  ).bind("external_container");
+  ).bind("function");
+  
+
 
 
 class LoopPrinter : public MatchFinder::MatchCallback {
 public:
   virtual void run(const MatchFinder::MatchResult &Result) override {
-    const auto *external_container = Result.Nodes.getNodeAs<clang::RecordDecl>("external_container");
-    if (!external_container) return;
+    const auto *member = Result.Nodes.getNodeAs<clang::MemberExpr>("external_member");
+    if (!member) return;
 
-    const auto *external_pointer = Result.Nodes.getNodeAs<clang::FieldDecl>("external_pointer");
-    if (!external_pointer) return;
-    external_pointer->dump();
+    const auto *stmt = Result.Nodes.getNodeAs<clang::Stmt>("stmt");
+    if (!stmt) return;
+
+    auto loc = Result.SourceManager->getPresumedLoc(stmt->getBeginLoc());
+
+    llvm::errs() << 
+    "https://elixir.bootlin.com/linux/latest/source/" <<
+    loc.getFilename() << 
+    "#L" <<
+    loc.getLine() <<
+    "\n";
+    
+    // stmt->dump();
   }
 };
 
