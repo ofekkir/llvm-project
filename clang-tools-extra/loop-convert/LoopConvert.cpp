@@ -32,7 +32,13 @@ auto LoopMatcher =
             memberExpr(
               hasDescendant(
                 // Dumps from inside (mutex) out (container)
-                memberExpr().bind("external_member")
+                memberExpr(
+                  hasDescendant(
+                    declRefExpr(
+
+                    ).bind("external_decl_ref")
+                  )
+                ).bind("external_member")
               )
             ).bind("internal_member")
           )
@@ -50,19 +56,27 @@ public:
     const auto *member = Result.Nodes.getNodeAs<clang::MemberExpr>("external_member");
     if (!member) return;
 
+    const auto *decl_ref = Result.Nodes.getNodeAs<clang::DeclRefExpr>("external_decl_ref");
+    if (!decl_ref) return;
+
     const auto *stmt = Result.Nodes.getNodeAs<clang::Stmt>("stmt");
     if (!stmt) return;
 
-    auto loc = Result.SourceManager->getPresumedLoc(stmt->getBeginLoc());
+    auto loc = Result.SourceManager->getPresumedLoc(stmt->getBeginLoc());    
 
-    llvm::errs() << 
-    "https://elixir.bootlin.com/linux/latest/source/" <<
-    loc.getFilename() << 
-    "#L" <<
-    loc.getLine() <<
-    "\n";
+    const auto type_name = decl_ref->getType().getAsString();
+    const auto member_name = member->getMemberNameInfo().getAsString();
+    const auto file_name = std::string(loc.getFilename());
+    const auto line_number = std::to_string(loc.getLine());
+    const std::string url = std::string("https://elixir.bootlin.com/linux/latest/source/") + file_name + "#L" + line_number;
     
-    // stmt->dump();
+    llvm::errs() << 
+    file_name << "," <<
+    type_name << "," <<
+    member_name << "," <<
+    line_number << "," <<
+    url << "," <<
+    "\n";
   }
 };
 
